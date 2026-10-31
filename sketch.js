@@ -67,7 +67,7 @@ function bindControls(){
     $(id+'-tab').onclick=activate;
     $(id+'-tab').onkeydown=e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const next=e.key==='Home'?'main':e.key==='End'?'advanced':id==='main'?'advanced':'main';$(next+'-tab').click();$(next+'-tab').focus();}};
   }
-  $('energy-toggle').onclick=()=>{const open=$('energy-panel').hidden;$('energy-panel').hidden=!open;$('energy-toggle').setAttribute('aria-expanded',String(open));renderEnergy(true);};
+  $('energy-toggle').onclick=()=>{const open=$('energy-panel').hidden;$('energy-panel').hidden=!open;$('energy-toggle').setAttribute('aria-expanded',String(open));$('energy-toggle').setAttribute('aria-pressed',String(open));renderEnergy(true);};
   $('energy-kind').onchange=()=>renderEnergy(true);
   $('play').onclick=()=>setRunning(!running);
   $('restart').onclick=()=>restart();
@@ -99,15 +99,16 @@ function advance(){
 }
 function setup(){
   const host=$('canvas-host');const w=host.clientWidth;
-  const c=createCanvas(w,w>=790?570:830);c.parent(host);c.elt.setAttribute('aria-label','Live pendulum positions and phase-space portrait');c.elt.setAttribute('role','img');
+  const c=createCanvas(w,canvasHeight(w));c.parent(host);c.elt.setAttribute('aria-label','Live pendulum positions and phase-space portrait');c.elt.setAttribute('role','img');installCanvasTouch(c.elt);
   pixelDensity(Math.min(window.devicePixelRatio||1,2));textFont('system-ui');
   $('loading').remove();heat=createImage(168,112);bindControls();restart();
-  new ResizeObserver(()=>{const w=host.clientWidth;if(Math.abs(w-width)>1){resizeCanvas(w,w>=790?570:830);heatKey='';}}).observe(host);
+  new ResizeObserver(()=>{const w=host.clientWidth;if(Math.abs(w-width)>1){c.elt.dispatchEvent(new Event('layoutchange'));resizeCanvas(w,canvasHeight(w));view=layout();heatKey='';renderEnergy(true);}}).observe(host);
 }
+function canvasHeight(w){return w>=790?570:350+Math.max(240,Math.min(360,w-65))+65;}
 function layout(){
   const gap=24,margin=20;
   if(width>=790){const half=(width-3*margin)/2;return {physical:{x:margin,y:76,w:half,h:height-120},phase:{x:half+2*margin+45,y:90,w:half-64,h:height-155},pTitle:half+2*margin};}
-  return {physical:{x:margin,y:65,w:width-2*margin,h:265},phase:{x:62,y:410,w:width-86,h:height-475},pTitle:margin};
+  return {physical:{x:margin,y:65,w:width-2*margin,h:210},phase:{x:55,y:350,w:width-74,h:height-415},pTitle:margin};
 }
 function mapping(){
   const r=view.physical;
@@ -211,10 +212,10 @@ function draw(){
   displayedReference=reference?{theta:reference.prevTheta+(reference.theta-reference.prevTheta)*alpha,omega:reference.prevOmega+(reference.omega-reference.prevOmega)*alpha}:{theta:null,omega:0};
   $('mean-status').textContent=displayedReference.theta===null?'(reference unavailable: initial circular mean is undefined)':'';
   background('#0d1520');view=layout();
-  noStroke();fill('#e6edf5');textSize(14);textAlign(LEFT,TOP);text('Physical space',view.physical.x,22);text('Phase space',view.pTitle,width>=790?22:355);
+  noStroke();fill('#e6edf5');textSize(14);textAlign(LEFT,TOP);text('Physical space',view.physical.x,22);text('Phase space',view.pTitle,width>=790?22:295);
   fill('#7890a8');textSize(10);text(bodies.length+' independent pendulums, drag to set angle',view.physical.x,44);
-  text('Click to place initial ensemble mean',view.pTitle,width>=790?44:377);
-  if(width>=790){stroke('#253141');line(view.physical.x+view.physical.w+10,20,view.physical.x+view.physical.w+10,height-20);}else{stroke('#253141');line(20,340,width-20,340);}
+  text('Click to place initial ensemble mean',view.pTitle,width>=790?44:317);
+  if(width>=790){stroke('#253141');line(view.physical.x+view.physical.w+10,20,view.physical.x+view.physical.w+10,height-20);}else{stroke('#253141');line(20,280,width-20,280);}
   drawPhysical(states,renderTime);drawPhase(states,renderTime);
   smoothedFPS=.95*smoothedFPS+.05*(1000/Math.max(deltaTime,1));
   $('time').textContent=renderTime.toFixed(2)+' s';$('fps').textContent=Math.round(smoothedFPS)+' fps';
@@ -223,7 +224,7 @@ function draw(){
 }
 function inside(x,y,r){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function mousePressed(event){
-  if(!view||event?.target?.tagName!=='CANVAS')return;
+  if(!view||event?.target?.id!=='defaultCanvas0'||performance.now()<ignoreMouseUntil)return;
   if(inside(mouseX,mouseY,view.phase)){
     const r=view.phase;setControl('meanAngle',-Math.PI+(mouseX-r.x)/r.w*P.TAU);setControl('meanOmega',clamp((1-2*(mouseY-r.y)/r.h)*S.omegaMax,-20,20));restart();return false;
   }
@@ -231,7 +232,7 @@ function mousePressed(event){
   const xy=position(displayedReference.theta,renderTime);
   if(inside(mouseX,mouseY,view.physical)&&Math.hypot(mouseX-xy[0],mouseY-xy[1])<28){resumeAfterDrag=running;dragging=true;setRunning(false);dragAngle();return false;}
 }
-function dragAngle(){const m=mapping();const px=m.cx;setControl('meanAngle',Math.atan2(mouseX-px,mouseY-m.cy));setControl('meanOmega',0);restart();}
+function dragAngle(x=mouseX,y=mouseY){const m=mapping();const px=m.cx;setControl('meanAngle',Math.atan2(x-px,y-m.cy));setControl('meanOmega',0);restart();}
 function mouseDragged(){if(dragging){dragAngle();return false;}}
 function mouseReleased(){if(dragging){dragging=false;setRunning(resumeAfterDrag);return false;}}
 
@@ -243,3 +244,42 @@ function renderEnergy(force=false){
   drawEnergyGraph($('energy-canvas'),energyHistory,bodies,S,t,$('energy-kind').value);
   $('energy-note').textContent='0–'+t.toFixed(2)+' s · '+bodies.length+' instances · history spacing '+(energyHistory.stride*H).toFixed(3)+' s. Entire run retained with adaptive sampling.';
 }
+
+// Touch starts on empty space remain scrollable; only a bob drag captures them.
+let ignoreMouseUntil=0;
+function installCanvasTouch(canvas){
+  let touch=null;
+  const point=e=>{const q=e.changedTouches[0],r=canvas.getBoundingClientRect();return {x:(q.clientX-r.left)*width/r.width,y:(q.clientY-r.top)*height/r.height};};
+  const finish=()=>{if(dragging){dragging=false;setRunning(resumeAfterDrag);}touch=null;ignoreMouseUntil=performance.now()+700;};
+  canvas.addEventListener('touchstart',e=>{
+    ignoreMouseUntil=performance.now()+700;
+    if(e.touches.length!==1||!view){finish();return;}
+    const q=point(e);touch={...q,startX:q.x,startY:q.y,moved:false,bob:false};
+    if(displayedReference&&displayedReference.theta!==null){const xy=position(displayedReference.theta,renderTime);
+      if(inside(q.x,q.y,view.physical)&&Math.hypot(q.x-xy[0],q.y-xy[1])<30){
+        e.preventDefault();touch.bob=true;resumeAfterDrag=running;dragging=true;setRunning(false);dragAngle(q.x,q.y);
+      }
+    }
+  },{passive:false});
+  canvas.addEventListener('touchmove',e=>{
+    if(!touch)return;if(e.touches.length!==1){finish();return;}
+    const q=point(e);touch.x=q.x;touch.y=q.y;
+    if(Math.hypot(q.x-touch.startX,q.y-touch.startY)>8)touch.moved=true;
+    if(touch.bob){e.preventDefault();dragAngle(q.x,q.y);}
+  },{passive:false});
+  canvas.addEventListener('touchend',e=>{
+    if(touch){const q=point(e);
+      if(touch.bob)e.preventDefault();
+      else if(!touch.moved&&Math.hypot(q.x-touch.startX,q.y-touch.startY)<=8&&inside(q.x,q.y,view.phase)){
+        e.preventDefault();const r=view.phase;setControl('meanAngle',-Math.PI+(q.x-r.x)/r.w*P.TAU);setControl('meanOmega',clamp((1-2*(q.y-r.y)/r.h)*S.omegaMax,-20,20));restart();
+      }
+    }finish();
+  },{passive:false});
+  canvas.addEventListener('touchcancel',finish,{passive:true});
+  canvas.addEventListener('layoutchange',finish);
+  window.addEventListener('orientationchange',finish,{passive:true});
+}
+// Prevent p5 from converting touch scrolling into simulated mouse edits.
+function touchStarted(){}
+function touchMoved(){}
+function touchEnded(){}
