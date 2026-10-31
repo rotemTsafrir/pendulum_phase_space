@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pendulum Lab — phase & motion</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><div><div class="eyebrow">NONLINEAR DYNAMICS · P5.JS</div><h1>Pendulum Lab<span>phase & motion</span></h1></div><div class="tag"><i></i> INDEPENDENT ENSEMBLE</div></header>
+<main>
+<aside aria-label="Simulation controls">
+<div class="tabs" role="tablist" aria-label="Control settings"><button role="tab" id="main-tab" aria-selected="true" aria-controls="main-panel">Main</button><button role="tab" id="advanced-tab" aria-selected="false" aria-controls="advanced-panel" tabindex="-1">Advanced</button></div>
+<div id="main-panel" role="tabpanel" aria-labelledby="main-tab">
+<section><h2>Pendulum</h2><div id="physical-controls"></div></section>
+<section><h2>Initial conditions</h2>
+<label class="stack">Distribution<select id="distribution"><option value="gaussian">Wrapped Gaussian</option><option value="uniform">Uniform rectangle</option></select></label>
+<div id="initial-controls"></div>
+
+<p class="hint" id="distribution-note"></p>
+</section>
+<section><h2>Display</h2><div id="display-controls"></div>
+<label class="toggle"><input id="heatmap" type="checkbox" checked> Phase-speed heatmap</label>
+<label class="toggle"><input id="arrows" type="checkbox" checked> Direction field</label>
+<label class="toggle"><input id="trails" type="checkbox" checked> Trajectories</label>
+</section>
+</div><div id="advanced-panel" role="tabpanel" aria-labelledby="advanced-tab" hidden><section><h2>Field appearance</h2><div id="advanced-controls"></div></section><section><h2>Sampling</h2><label class="row">Random seed<input id="seed" type="number" min="0" max="4294967295" step="1" value="42"></label></section></div></aside>
+<div class="workspace">
+<div class="toolbar"><div class="buttons"><button id="play" class="primary">Pause</button><button id="step" title="Pause and advance by 1/60 simulated second">Step</button><button id="restart">Restart</button><button id="resample">Resample</button><button id="energy-toggle" aria-expanded="false" aria-controls="energy-panel">Energy graph</button></div><div class="clock"><span id="time">0.00 s</span><small id="fps">— fps</small></div></div>
+<div id="canvas-host"><div id="loading">Loading p5.js…</div></div>
+<div class="legend"><span class="legend-label">NORMALIZED PHASE SPEED</span><span>0</span><span class="gradient"></span><span id="speed-bound">—</span></div>
+<p class="mean-key"><span></span> Green: reference pendulum <small id="mean-status"></small></p>
+<section id="energy-panel" class="energy-panel" hidden>
+<div class="energy-heading"><h2>Energy histories</h2><label>Show <select id="energy-kind"><option value="kinetic">Kinetic energy</option><option value="potential">Potential energy</option><option value="total" selected>Total energy</option></select></label></div>
+<p class="hint">Energy per unit mass (J/kg) · potential zero at the bottom · matching instance colors</p>
+<canvas id="energy-canvas" role="img" aria-label="Energy versus time for every pendulum"></canvas>
+<p id="energy-note" class="hint"></p>
+</section>
+<details class="guide"><summary>How to explore & what the colors mean</summary>
+<div class="guide-grid"><div><h3>Explore the ensemble</h3><p>Click phase space to set the initial mean angle and angular velocity. Drag the green reference pendulum to set the initial distribution center (release at rest). The green reference starts at the actual samples’ mean initial angle (circular mean) and angular velocity (arithmetic mean). It then evolves independently with the same RK4 solver as every sample. It need not stay at the center of the ensemble. If the initial circular mean is undefined, the reference is unavailable. Each color tracks the same independent pendulum in both views. There are no collisions or interactions.</p><p>Restart reuses the seed. Resample changes it. Gravity, length and damping update live without changing the current angles, angular velocities, clock or energy history. Initial-condition controls restart the run; display controls do not. Instantaneous changes to length or gravity can produce energy jumps. Space pauses or resumes outside form controls. Hidden tabs automatically suspend simulation time.</p></div>
+<div><h3>Read the phase portrait</h3><p>The horizontal axis wraps at ±π; trajectories break at this seam. The vertical axis is angular velocity in rad/s. Heatmap color describes the <em>vector field</em>, not the density of pendulums. With fixed parameters, the arrows and colors remain stationary as the pendulums evolve.</p><p>With T = √(L/g), the dimensionless speed is s = √[(Tω)² + (T²α)²]. Colors use log(1+Gs)/log(1+Gs<sub>max</sub>), where G is the Advanced log gain, with a time-independent upper bound over the visible range. Changing physical settings or the axis range recalculates that bound.</p></div>
+<div><h3>Model & numerics</h3><p>θ̈ = −(g/L)sin θ − γθ̇. The pivot is fixed, so the dynamics have no explicit time dependence. Angle is measured from downward vertical. Resistance is viscous angular damping γ in s⁻¹; dry friction is not included.</p><p>Fixed-step RK4 at 480 Hz with render interpolation. Time spent in a stalled frame above 100 ms is discarded to avoid a large catch-up burst; the simulation clock shows actual integrated time.</p></div></div>
+</details>
+<footer>Single pendulum, many possibilities. <span>RK4 · Δt = 1/480 s</span></footer>
+</div>
+</main>
+<script src="vendor/p5.min.js"></script><script src="physics.js"></script><script src="energy.js"></script><script src="sketch.js"></script>
+</body></html>
