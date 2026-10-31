@@ -1,4 +1,4 @@
-# Pendulum Lab — p5.js conversion
+# Pendulum Lab
 
 
 ## Features
