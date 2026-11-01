@@ -1,166 +1,135 @@
 # Pendulum Lab
 
+An interactive pendulum simulator built with p5.js. Explore nonlinear motion, phase-space trajectories, damping, and energy through an ensemble of independent pendulums with slightly different initial conditions.
+
+The physical view and phase portrait show the same ensemble, making it easy to connect a pendulum’s motion with its trajectory in angle–angular-velocity space. The simulation runs entirely in the browser, with no backend or build step.
 
 ## Features
 
-- Fixed-timestep fourth-order Runge–Kutta (RK4), dt = 1/480 s, independent of
-  display frame rate, with interpolation for smooth rendering.
-- Between 1 and 200 independent pendulums, matching colors in physical and phase
-  space. Click phase space to set the initial ensemble mean; drag the green reference
-  bob to set the initial distribution center and release at rest.
-- Wrapped Gaussian by default; Uniform rectangle available. Independent draws
-  for both axes, with configurable mean and population-standard-deviation inputs.
-  Both sigma controls range from 0 to 0.5 (rad and rad/s, respectively).
-  Finite samples need not have exactly the requested sample moments.
-- Reproducible random seed. Restart repeats initial samples; Resample increments
-  the seed. Changing initial-condition controls restarts; physical parameters update live and display changes do not.
-- Length, gravity, and viscous resistance.
-  The pivot is fixed and the vector field is stationary.
-- Stationary normalized phase-speed heatmap in purple, orange and cream,
-  correctly scaled direction arrows, and continuous trajectories.
-- Pause/play, single step (1/60 simulated second), simulation speed, velocity-axis
-  range and trail duration. Space toggles play outside form controls.
-- Responsive layout; independently scrollable desktop controls.
+- **Physical and phase-space views** with matching instance colors and trajectory trails.
+- **Phase-speed heatmap** and black arrows showing the local direction of motion.
+- **Adjustable length, gravity, and damping** that take effect without restarting the simulation.
+- **Ensembles of 1–200 pendulums**, sampled from a wrapped Gaussian or uniform rectangle.
+- **Independent green reference pendulum**, initialized at the ensemble’s mean initial state.
+- **Kinetic, potential, and total energy graphs** for every sampled pendulum, spanning the full run.
+- **Fixed-timestep RK4 integration** with interpolation for smooth rendering.
+- **Reproducible sampling**, pause/play, single-step, restart, and resample controls.
+- **Mobile layout** with a controls drawer, touch interactions, and support for portrait and landscape resizing.
 
-## Physics
+## Getting started
 
-Angle theta is measured from downward vertical; omega = theta_dot.
+Download or clone the repository and open `dist/index.html` in a modern browser. Keep the files in `dist/` together. p5.js is bundled, so no installation or internet connection is required to run the downloaded simulation.
 
-    theta_dot  = omega
-    omega_dot  = -(g/L) sin(theta) - gamma omega
+The contents of `dist/` form a static website suitable for GitHub Pages or another static host. If these files are placed directly in your repository’s root, open `index.html` instead.
 
-The dynamics have no explicit time dependence. Resistance gamma is the angular
-viscous damping rate in s^-1. This replaces the old two-term resistance model;
-dry/Coulomb friction is not included. If specifying a viscous torque coefficient
-alpha instead, gamma = alpha/(m L^2). Mass therefore does not need a separate control.
-The initial L=4 m, g=5 m/s^2 and gamma=0.03125 s^-1 match the old length, gravity
-and viscous coefficient (alpha=2, m=4), excluding its dry-friction torque.
+## Controls
 
-All pendulums share physical parameters. They do not interact.
-The pivot remains fixed. Angles are stored unwrapped during integration; only displays wrap.
-Phase-space trails break at the ±pi seam.
+| Control | Effect |
+| --- | --- |
+| Play / Pause | Start or pause time evolution |
+| Step | Pause and advance by 1/60 simulated second |
+| Restart | Restart using the same initial settings and seed |
+| Resample | Increment the seed and generate a new ensemble |
+| Energy graph | Show or hide the energy chart; the button highlights while open |
+| Click / tap phase space | Set the initial distribution center and restart |
+| Drag the green bob | Set the initial angle distribution center and zero mean angular velocity |
+| Space | Toggle play/pause outside form controls |
 
-### Initial distributions
+On mobile, use **Controls** to open the settings drawer. Swipe outside the bob to scroll the page. Resizing or rotating the screen preserves the simulation state and energy history.
 
-Wrapped Gaussian: independently draw theta from N(meanAngle, stdAngle^2) and
-omega from N(meanOmega, stdOmega^2), then wrap theta to [-pi, pi). Angular sigma
-is the standard deviation of the underlying unwrapped Gaussian, not a circular
-standard deviation. Uniform rectangle: sample each axis within mean ± sqrt(3)
-*sigma, then wrap theta. Wide rectangles can overlap themselves on the cylinder.
-The standard deviations describe the populations before wrapping. Set both to
-zero for identical initial conditions, or count to 1 for a single pendulum.
+**Main** contains physical parameters, initial conditions, and display controls. **Advanced** contains arrow density, maximum arrow length, logarithmic heatmap gain, random seed, and angular-velocity axis range.
+
+Changing initial-condition settings starts a new run. Changing length, gravity, or damping preserves the current angles, angular velocities, and simulation time. Display changes do not restart the run.
+
+## Physical model
+
+Each pendulum is a point mass on a massless rigid rod with a fixed pivot and linear viscous damping. Pendulums do not interact.
+
+$$
+\dot{\theta}=\omega, \qquad
+\dot{\omega}=-\frac{g}{L}\sin\theta-\gamma\omega
+$$
+
+Here, $\theta$ is measured from the downward vertical, $\omega$ is angular velocity, $L$ is length, $g$ is gravitational acceleration, and $\gamma$ is the damping rate in $\mathrm{s}^{-1}$.
+
+With fixed parameters, this is an autonomous system: its vector field has no explicit time dependence. The phase portrait remains stationary while the pendulums evolve. Editing a physical parameter changes that field immediately.
+
+Integration uses fourth-order Runge–Kutta with a fixed timestep of $1/480$ s. Angles remain unwrapped internally and are wrapped to $[-\pi,\pi)$ for the phase portrait.
+
+### Initial conditions and reference pendulum
+
+The default ensemble contains **15 samples**, with angle and angular-velocity standard deviations of **0.02 rad** and **0.02 rad/s**. Both spread controls range from 0 to 0.5.
+
+- **Wrapped Gaussian:** sample angle and angular velocity independently from normal distributions, then wrap the angle. Angular spread refers to the underlying unwrapped Gaussian.
+- **Uniform rectangle:** sample each coordinate independently within its mean plus or minus $\sqrt{3}\sigma$, then wrap the angle. This gives the same specified standard deviation before wrapping.
+
+Finite samples need not have exactly the requested population mean or spread.
+
+The green reference starts at the samples’ circular mean angle and arithmetic mean angular velocity. It then evolves independently using the same RK4 solver. It is **not the ensemble’s instantaneous mean**, so it can move away from the ensemble’s center over time. It is additional to the configured sample count.
 
 ### Heatmap
 
-T = sqrt(L/g). The dimensionless speed is
+The heatmap represents dimensionless phase-space speed, combining angular velocity and angular acceleration:
 
-    s = hypot(T omega, T^2 omega_dot).
+$$
+T=\sqrt{L/g}, \qquad
+s=\sqrt{(T\omega)^2+(T^2\dot{\omega})^2}
+$$
 
-The axes retain rad and rad/s labels. Color is log(1+G*s)/log(1+G*s_max), where
-s_max is a conservative time-independent upper bound over the visible omega
-range. This is deliberately not recalculated from each frame's extrema. The
-heatmap and color scale remain stationary while the pendulums evolve.
-Changing physical parameters or the velocity-axis range changes the bound.
-The displayed color bar maximum is dimensionless. Arrows are scaled in screen
-coordinates, so their directions match the plotted trajectories.
+Color uses a logarithmic mapping, $\log(1+Gs)/\log(1+Gs_{\max})$, where $G$ is the adjustable gain and $s_{\max}$ is a fixed upper bound for the current parameters and visible angular-velocity range. Colors do not rescale according to the moving ensemble. This is a speed map, not a probability-density map.
 
-### Timing and performance
+### Energy
 
-At most 100 ms of wall time is accumulated per rendered frame. Longer stalls
-and hidden-tab time are discarded rather than causing large catch-up bursts.
-The simulation clock always reports integrated time, not total wall time. This
-limit can make playback slower than real time on an overloaded device. High
-counts and long trails increase rendering demands.
-Rendering lags the integrated state by at most one timestep when running.
-The FPS counter is a smoothed measurement of render intervals, not physics steps.
-No fixed-step solver guarantees exact long-time trajectories in a chaotic regime.
+Energy is shown per unit mass, in J/kg, with potential energy zero at the bottom:
 
-## Files
+$$
+K/m=\tfrac12 L^2\omega^2, \qquad U/m=gL(1-\cos\theta), \qquad E/m=K/m+U/m
+$$
 
-- dist/index.html — page and controls
-- dist/style.css — responsive interface
-- dist/physics.js — p5-independent model, RK4, distributions and ring buffer
-- dist/sketch.js — p5 rendering, simulation clock, interactions
-- dist/energy.js — energy history and chart rendering
-- dist/vendor/ — bundled p5.js and its license
-- test-physics.cjs — numerical regression checks (run `node test-physics.cjs`)
+For fixed parameters, $\dot E/m=-\gamma L^2\omega^2$. Energy is conserved in the undamped model and decreases with positive damping, up to numerical error.
 
-## Validation
+The chart includes all sampled pendulums; the additional reference has no separate energy curve. History is recorded even while the chart is closed. Long runs progressively reduce the sampling density while retaining the full time span from zero.
 
-Numerical tests cover time invariance, conservative energy over 120 simulated seconds, monotonic
-energy loss with damping, small-angle oscillation period, timestep convergence
-at high natural frequency, distribution moments and support,
-reproducibility, angle wrapping, circular buffers, and the heatmap upper bound.
-Browser checks cover initial rendering, pause/step, distribution switching and parameter controls. Vendor p5.js is unmodified and retains its license.
+Live changes to length or gravity can produce energy jumps. These edits switch parameters at fixed angle and angular velocity; they do not model the mechanics of continuously changing a rod’s length.
 
-## Advanced controls and updated defaults
+## Things to explore
 
-The default ensemble has 15 independent samples; sigma_angle = 0.02 rad and
-sigma_omega = 0.02 rad/s. Both sigma controls still range from 0 to 0.5.
-The Main / Advanced tabs separate physical and initial-condition controls from
-arrow density (number of columns, rows follow plot aspect ratio), maximum arrow
-length in pixels, heatmap logarithm gain G, random seed, and angular-velocity
-axis range. Field arrows are black. Controls and titles use lavender/slate;
-the existing purple/orange/cream heatmap palette is unchanged.
+- Set damping to zero and compare libration with full rotations.
+- Start near the upright unstable equilibrium and watch nearby initial conditions separate.
+- Increase the initial spread and observe how the ensemble stretches in phase space.
+- Add damping and watch trajectories approach the stable equilibrium.
+- Compare kinetic and potential energy exchange with the total energy curve.
 
-The heatmap color coordinate is log(1+G*s)/log(1+G*s_max), where G > 0.
-Changing these display settings does not restart the simulation; changing the
-seed does. Numbered section prefixes and the three redundant footer messages
-have been removed.
+The fixed-parameter single-pendulum model is not chaotic; separation near an unstable equilibrium alone is not evidence of chaos.
 
-## Green reference pendulum
+## Project files
 
-At each restart or resample, the reference is initialized from the actual random
-samples: theta_ref(0) = atan2(sum(sin(theta_i(0))), sum(cos(theta_i(0)))) and
-omega_ref(0) = mean(omega_i(0)). This is the finite ensemble's mean, rather than
-the nominal distribution center in the controls. The reference is then evolved
-independently in the very same RK4 loop and with the same 1/480-second timestep,
-physical parameters and rendering interpolation as the samples. Its state is
-never overwritten by subsequent ensemble averages. Green trails show its own
-trajectory. As the ensemble spreads, this physical reference need not remain
-at its center. The reference is additional to the configured N random samples.
-If the initial circular mean resultant per sample is below 1e-8, the initial
-mean angle is undefined and no reference is created; an explanatory note appears.
+| File | Purpose |
+| --- | --- |
+| `dist/index.html` | Page structure and controls |
+| `dist/style.css` | Styling and responsive layout |
+| `dist/physics.js` | Equations, RK4 integration, sampling, and trail buffers |
+| `dist/sketch.js` | p5.js rendering and simulation interactions |
+| `dist/energy.js` | Energy history and chart rendering |
+| `dist/mobile-ui.js` | Mobile controls drawer and keyboard handling |
+| `dist/vendor/` | Bundled p5.js and its license |
 
-## Energy graph
+## Validation and limitations
 
-Use the Energy graph button to open/close a chart below the simulation. Select
-Kinetic, Potential, or Total energy for all N individual pendulums, using their
-matching colors. Energy is per unit mass in J/kg (equivalently joules for 1 kg):
+Run the regression checks with Node.js from the repository root:
 
-    K/m = 0.5 * L^2 * omega^2
-    U/m = g * L * (1 - cos(theta))
-    E/m = K/m + U/m
+```sh
+node test-physics.cjs
+node test-reference.cjs
+node test-live-parameters.cjs
+```
 
-Potential energy is zero at the bottom. Energy curves continue to show the N
-random samples; the additional green reference has no separate energy curve. The time axis
-always spans t=0 through the current integrated simulation time. History is
-recorded even while the chart is closed, initially at 30 Hz. At 6,000 stored
-rows, every other row is retained and the sampling interval doubles, preserving
-t=0 and the full run's time span with bounded memory. The live endpoint is always
-included. This is uniformly coarsened sampled history, not lossless storage of
-every RK4 step; sufficiently long runs may lose fine oscillatory detail. A new
-run (including changed initial conditions) clears the old history. Live changes
-to gravity, length and damping preserve history and record both sides of each
-parameter switch. Energy jumps from changed length or gravity are expected.
-Tests cover energy definitions, circular means including seam/cancellation cases,
-history coarsening, retention of t=0, and history reset. Browser checks verify
-opening the chart, switching energy types and Advanced controls without resetting.
+Checks cover numerical integration, distributions, reference evolution, and preservation of state during live parameter changes.
 
-Reference regression tests: `node test-reference.cjs` checks initialization at the
-actual sample mean, identical RK4 evolution, long-run energy conservation,
-separation from the instantaneous ensemble mean, and zero-spread coincidence.
+RK4 is accurate at the chosen timestep but is not an exactly energy-conserving integrator. Very long runs may accumulate numerical error. High instance counts and long trails increase rendering cost. Large frame delays are capped, so simulated time can advance more slowly than wall time on overloaded devices.
 
-## Live physical parameters
+Browser checks cover mobile-sized layouts and orientation-style resizing. Actual device performance and touch behavior can vary.
 
-Gravity, length, and damping now apply immediately to all samples and the green
-reference, preserving every current angle and angular velocity, time, pause/play
-state, seed, trails and energy history. RK4 takes subsequent steps using the new
-parameters. The field heatmap is invalidated immediately. Releasing a slider
-without another value change does not repeat the parameter-switch event.
-Physical trail samples retain their original lengths rather than being redrawn
-at the new length. The current bob position moves to the new radius when length
-changes. This models an instantaneous parameter switch at fixed (theta, omega),
-not the dynamics of a continuously telescoping pendulum; energy need not be
-conserved at a gravity/length switch. Energy history stores pre/post values at
-the same time, showing any instantaneous jump without rewriting earlier data.
+## Credits
+
+Built with [p5.js](https://p5js.org/). The bundled library retains its license in `dist/vendor/p5-LICENSE.txt`.
