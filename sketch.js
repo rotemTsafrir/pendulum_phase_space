@@ -2,7 +2,7 @@
 'use strict';
 const P = PendulumPhysics;
 const H = 1/480;
-const S = {length:4,gravity:5,damping:0.03125,count:15,meanAngle:1.5,meanOmega:0,stdAngle:0.02,stdOmega:0.02,seed:42,distribution:'gaussian',arrowDensity:16,arrowLength:14,logGain:1,omegaMax:4,trailSeconds:5,rate:1};
+const S = {length:4,gravity:5,damping:0.03125,count:15,meanAngle:1.5,meanOmega:0,stdAngle:0.02,stdOmega:0.02,seed:42,distribution:'gaussian',arrowDensity:16,arrowLength:12,logGain:1,omegaMax:4,trailSeconds:5,rate:1};
 let bodies=[],t=0,ticks=0,accumulator=0,running=true,heat,heatKey='',view,dragging=false,resumeAfterDrag=false;
 let smoothedFPS=60,limitedUntil=0,renderTime=0,skipNextFrame=false;
 let reference=null,simulationBodies=[],displayedReference=null;
