@@ -1,4 +1,4 @@
-/* p5.js global-mode sketch. Controls are ordinary accessible HTML inputs. */
+
 'use strict';
 const P = PendulumPhysics;
 const H = 1/480;
