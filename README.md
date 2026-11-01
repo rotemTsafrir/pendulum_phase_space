@@ -1,6 +1,8 @@
 # Pendulum Lab
 
-An interactive pendulum simulator built with p5.js. Explore nonlinear motion, phase-space trajectories, damping, and energy through an ensemble of independent pendulums with slightly different initial conditions.
+An interactive pendulum simulator built with p5.js. 
+
+Explore nonlinear motion, phase-space trajectories, damping, and energy through an ensemble of independent pendulums with slightly different initial conditions.
 
 The physical view and phase portrait show the same ensemble, making it easy to connect a pendulum’s motion with its trajectory in angle–angular-velocity space. The simulation runs entirely in the browser, with no backend or build step.
 
