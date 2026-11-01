@@ -40,7 +40,7 @@
 <div><h3>Read the phase portrait</h3><p>The horizontal axis wraps at ±π; trajectories break at this seam. The vertical axis is angular velocity in rad/s. Heatmap color describes the <em>vector field</em>, not the density of pendulums. With fixed parameters, the arrows and colors remain stationary as the pendulums evolve.</p><p>With T = √(L/g), the dimensionless speed is s = √[(Tω)² + (T²α)²]. Colors use log(1+Gs)/log(1+Gs<sub>max</sub>), where G is the Advanced log gain, with a time-independent upper bound over the visible range. Changing physical settings or the axis range recalculates that bound.</p></div>
 <div><h3>Model & numerics</h3><p>θ̈ = −(g/L)sin θ − γθ̇. The pivot is fixed, so the dynamics have no explicit time dependence. Angle is measured from downward vertical. Resistance is viscous angular damping γ in s⁻¹; dry friction is not included.</p><p>Fixed-step RK4 at 480 Hz with render interpolation. Time spent in a stalled frame above 100 ms is discarded to avoid a large catch-up burst; the simulation clock shows actual integrated time.</p></div></div>
 </details>
-<footer>Single pendulum, many possibilities. <span>RK4 · Δt = 1/480 s</span></footer>
+<footer><span>RK4 · Δt = 1/480 s</span></footer>
 </div>
 </main>
 <script src="vendor/p5.min.js"></script><script src="physics.js"></script><script src="energy.js"></script><script src="sketch.js"></script><script src="mobile-ui.js"></script>
